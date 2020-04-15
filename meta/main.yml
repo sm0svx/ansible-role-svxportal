@@ -1,0 +1,20 @@
+---
+galaxy_info:
+  role_name: ansible-role-svxportal
+  author: Tobias Blomberg SM0SVX
+  description: >
+    An Ansible role for installing, setting up, configuring and managing
+    the SvxPortal SvxReflector web UI.
+    THIS IS WORK IN PROGRESS
+  company: svxlink
+  license: GPLv3
+  min_ansible_version: 2.6
+  github_branch: master
+  platforms:
+  - name: Debian
+    versions:
+    - 8
+    - 10
+  galaxy_tags:
+    - communications
+    - hamradio

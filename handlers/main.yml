@@ -1,0 +1,6 @@
+---
+- name: Restart the webserver
+  service:
+    name: "{{ svxportal_http_service }}"
+    state: restarted
+  listen: restart apache

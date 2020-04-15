@@ -1,0 +1,39 @@
+---
+- name: Gather OS specific variables
+  include_vars: "{{ item }}"
+  with_first_found:
+    - "{{ ansible_distribution }}-{{ ansible_distribution_major_version }}-{{ ansible_architecture }}.yml"
+    - "{{ ansible_distribution }}-{{ ansible_distribution_major_version }}.yml"
+    #- "{{ ansible_distribution }}.yml"
+  tags:
+    - always
+
+- name: Install required packages
+  apt:
+    name: "{{ svxportal_required_packages }}"
+    update_cache: yes
+    state: latest
+  tags:
+    - packages
+
+- name: Clone Git repo
+  git:
+    repo: "{{ svxportal_git_url }}"
+    version: "{{ svxportal_git_version }}"
+    dest: "{{ svxportal_src_dir }}"
+  connection: local
+  run_once: True
+  vars:
+    ansible_become: no
+  tags:
+    - git
+
+- name: Set up DB
+  import_tasks: setup-db.yml
+  tags:
+    - db
+
+- name: Set up web
+  import_tasks: setup-web.yml
+  tags:
+    - web

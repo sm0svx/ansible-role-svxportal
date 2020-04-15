@@ -1,0 +1,38 @@
+---
+# The Git URL used to clone the source code repository
+svxportal_git_url: "https://github.com/sa2blv/SVXportal.git"
+
+# The Git branch or tag to clone
+svxportal_git_version: "master"
+
+# The SvxReflector URL for fetching the status
+svxportal_reflector_status_url: "http://localhost:8080/status"
+
+# The URL alias to the proxy. Must start and end with a slash.
+svxportal_proxy_url: "/reflectorproxy/"
+
+# The path to the directory where recordings are stored
+svxportal_recording_dir: "{{ svxportal_html_dir }}/svxrecording"
+
+# Live listen URL
+svxportal_live_link_url: "http://live.example.com:8000/svxcard96"
+
+# Database settings
+svxportal_db_host: "localhost"
+svxportal_db_user: "svx"
+svxportal_db_password: "!"
+svxportal_db_name: "svx"
+
+# Disable the default site in Apache
+svxportal_disable_default_site: True
+
+# Webserver port
+svxportal_http_port: 80
+
+# Iframe under system description
+svxportal_documentation_url: "http://docs.example.com/svxreflector"
+
+# The default map postition
+default_map_pos:
+  lat: "62.676160"
+  long: "17.633479"

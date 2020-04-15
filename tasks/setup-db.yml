@@ -1,0 +1,38 @@
+---
+- name: Start DB server
+  service:
+    name: "{{ svxportal_db_service }}"
+    state: started
+    enabled: yes
+
+- name: Create DB
+  mysql_db:
+    name: "{{ svxportal_db_name }}"
+    login_unix_socket: "{{ svxportal_db_sock }}"
+    state: present
+  register: db_create
+
+- name: Upload default DB schema
+  copy:
+    src: "{{ svxportal_src_dir }}/sql/svx.sql"
+    dest: "/tmp/svx.sql"
+    owner: root
+    group: root
+    mode: 0640
+  when: db_create.changed
+
+- name: Load default DB schema
+  mysql_db:
+    name: "{{ svxportal_db_name }}"
+    login_unix_socket: "{{ svxportal_db_sock }}"
+    target: "/tmp/svx.sql"
+    state: import
+  when: db_create.changed
+
+- name: Create DB user for the web application to use
+  mysql_user:
+    name: "{{ svxportal_db_user }}"
+    password: "{{ svxportal_db_password }}"
+    priv: "{{ svxportal_db_name }}.*:ALL"
+    login_unix_socket: "{{ svxportal_db_sock }}"
+    state: present

@@ -1,0 +1,31 @@
+<?php
+$host = "{{ svxportal_db_host }}";
+$user ="{{ svxportal_db_user }}";
+$password ="{{ svxportal_db_password }}";
+$db="{{ svxportal_db_name }}";
+
+$link =  mysqli_connect($host, $user, $password , $db);
+// Site name
+$sitename = "2.2";
+
+// Live link
+$livelink="{{ svxportal_live_link_url }}";
+
+// Svx recording folder
+$dir="{{ svxportal_recording_dir }}";
+ 
+// svxreflector server adress;
+$serveradress ="{{ svxportal_proxy_url }}";
+
+// login form recording
+//$use_logein= true;
+// Iframe under system description
+$iframe_documentation_url  ="{{ svxportal_documentation_url }}";
+
+// Default Position
+$default_lat ="{{ default_map_pos.lat }}";
+$default_long ="{{ default_map_pos.long }}";
+
+
+// vim: set filetype=php:
+?>

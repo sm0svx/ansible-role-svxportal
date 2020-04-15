@@ -1,0 +1,38 @@
+---
+svxportal_required_packages:
+  # MySQL
+  #- mysql-server
+  #- mysql-client
+  #- libmysqlclient-dev
+  - mariadb-server
+  - mariadb-client
+  - default-libmysqlclient-dev
+  # Apache
+  - apache2
+  - apache2-doc
+  #- apache2-mpm-prefork
+  - apache2-utils
+  - libexpat1
+  - ssl-cert
+  # PHP
+  #- libapache2-mod-php7.0
+  - libapache2-mod-php7.3
+  - php7.3
+  - php7.3-common
+  - php7.3-curl
+  - php7.3-dev
+  - php7.3-gd
+  - php-pear
+  - php-imagick
+  #- php7.3-mcrypt
+  - php7.3-mysql
+  - php-ps
+  - php7.3-xsl
+  - python-pymysql
+
+svxportal_src_dir: "tmp/svxportal-{{ svxportal_git_version }}"
+svxportal_proxy_src_dir: "{{ svxportal_src_dir }}/reflector_proxy"
+svxportal_html_dir: "/var/www/svxportal"
+svxportal_http_service: "apache2"
+svxportal_db_service: "mariadb"
+svxportal_db_sock: "/var/run/mysqld/mysqld.sock"

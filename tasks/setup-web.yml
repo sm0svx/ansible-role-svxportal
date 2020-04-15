@@ -1,0 +1,75 @@
+---
+- name: Install web content
+  vars:
+    ansible_ssh_extra_args: "-l {{ ansible_ssh_user }}"
+  synchronize:
+    src: "{{ svxportal_src_dir }}/"
+    dest: "{{ svxportal_html_dir }}/"
+    archive: no
+    delete: yes
+    links: yes
+    owner: no
+    group: no
+    perms: yes
+    times: yes
+    recursive: yes
+    set_remote_user: no
+    use_ssh_args: yes
+    rsync_opts:
+      - "--exclude=.*"
+      - "--exclude=config.php"
+      - "--exclude=/svxrecording"
+      - "--exclude=/sql"
+      - "--exclude=/README.md"
+
+- name: Create audio recoring dir
+  file:
+    path: "{{ svxportal_recording_dir }}"
+    owner: root
+    group: root
+    mode: 0755
+    state: directory
+
+- name: Configure
+  template:
+    src: "{{ item.src }}"
+    dest: "{{ svxportal_html_dir }}/{{ item.dest }}"
+    owner: root
+    group: root
+    mode: 0644
+  loop:
+    - src: "config.php.j2"
+      dest: "config.php"
+    - src: "proxy-config.php.j2"
+      dest: "reflector_proxy/config.php"
+
+- name: Install the SvxPortal Apache site
+  template:
+    src: 001-svxportal.conf.j2
+    dest: /etc/apache2/sites-available/001-svxportal.conf
+    owner: root
+    group: root
+    mode: 0644
+  notify:
+    - restart apache
+
+- name: Disable the default Apache site
+  command: a2dissite 000-default
+  args:
+    removes: /etc/apache2/sites-enabled/000-default.conf
+  notify:
+    - restart apache
+  when: svxportal_disable_default_site
+
+- name: Enable the SvxPortal Apache site
+  command: a2ensite 001-svxportal
+  args:
+    creates: /etc/apache2/sites-enabled/001-svxportal.conf
+  notify:
+    - restart apache
+
+- name: Start http server
+  service:
+    name: "{{ svxportal_http_service }}"
+    state: started
+    enabled: yes
