@@ -1,6 +1,6 @@
 ---
 galaxy_info:
-  role_name: ansible-role-svxportal
+  role_name: svxportal
   author: Tobias Blomberg SM0SVX
   description: >
     An Ansible role for installing, setting up, configuring and managing
