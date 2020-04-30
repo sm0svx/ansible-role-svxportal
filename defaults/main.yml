@@ -33,6 +33,9 @@ svxportal_http_port: 80
 svxportal_documentation_url: "http://docs.example.com/svxreflector"
 
 # The default map postition
-default_map_pos:
+svxportal_default_map_pos:
   lat: "62.676160"
   long: "17.633479"
+
+# The default map zoom level
+svxportal_default_zoom: 5

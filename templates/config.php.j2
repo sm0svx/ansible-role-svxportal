@@ -23,9 +23,9 @@ $serveradress ="{{ svxportal_proxy_url }}";
 $iframe_documentation_url  ="{{ svxportal_documentation_url }}";
 
 // Default Position
-$default_lat ="{{ default_map_pos.lat }}";
-$default_long ="{{ default_map_pos.long }}";
-
+$default_lat = "{{ svxportal_default_map_pos.lat }}";
+$default_long = "{{ svxportal_default_map_pos.long }}";
+$default_zoom = {{ svxportal_default_zoom }};
 
 // vim: set filetype=php:
 ?>
