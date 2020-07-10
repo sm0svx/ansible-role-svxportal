@@ -1,0 +1,10 @@
+{% if remove_talkgroups|length + add_talkgroups|length > 0 %}
+LOCK TABLES Talkgroup WRITE;
+{% for item in remove_talkgroups %}
+DELETE FROM Talkgroup WHERE TG={{ item.tg }};
+{% endfor %}
+{% for item in add_talkgroups %}
+INSERT INTO Talkgroup (TG,TXT,Collor) VALUES ({{ item.tg }},'{{ item.name }}','{{ item.color }}');
+{% endfor %}
+UNLOCK TABLES;
+{% endif %}

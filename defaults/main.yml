@@ -39,3 +39,12 @@ svxportal_default_map_pos:
 
 # The default map zoom level
 svxportal_default_zoom: 5
+
+# Talkgroup setup
+svxportal_talkgroups: []
+#  - tg: 240
+#    name: 'Sweden'
+#    color: '#0ff220'
+#  - tg: 2400
+#    name: 'Stockholm Area'
+#    color: '#de50c4'
