@@ -8,14 +8,14 @@ svxportal_git_version: "master"
 # The SvxReflector URL for fetching the status
 svxportal_reflector_status_url: "http://localhost:8080/status"
 
-# The URL alias to the proxy. Must start and end with a slash.
-svxportal_proxy_url: "/reflectorproxy/"
+# The public URL to the reflector proxy
+svxportal_proxy_url: "http://svxportal.example.com/reflector_proxy/"
 
 # The path to the directory where recordings are stored
 svxportal_recording_dir: "{{ svxportal_html_dir }}/svxrecording"
 
 # Live listen URL
-svxportal_live_link_url: "http://live.example.com:8000/svxcard96"
+svxportal_live_link_url: "http://svxportal.example.com:8000/svxcard96"
 
 # Database settings
 svxportal_db_host: "localhost"

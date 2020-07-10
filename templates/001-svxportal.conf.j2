@@ -21,8 +21,8 @@
 		</FilesMatch>
 	</Directory>
 
-{% if svxportal_proxy_url != svxportal_proxy_dir %}
-	Alias "{{ svxportal_proxy_url }}" "{{ svxportal_html_dir }}/reflector_proxy/"
+{% if svxportal_proxy_url|urlsplit('path') != svxportal_proxy_dir %}
+	Alias "{{ svxportal_proxy_url|urlsplit('path') }}" "{{ svxportal_html_dir }}/reflector_proxy/"
 
 {% endif %}
 	# Available loglevels: trace8, ..., trace1, debug, info, notice, warn,
