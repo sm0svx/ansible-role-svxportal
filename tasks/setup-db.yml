@@ -36,3 +36,4 @@
     priv: "{{ svxportal_db_name }}.*:ALL"
     login_unix_socket: "{{ svxportal_db_sock }}"
     state: present
+  no_log: True
