@@ -19,7 +19,6 @@
       - "--exclude=.*"
       - "--exclude=config.php"
       - "--exclude=/svxrecording"
-      - "--exclude=/sql"
       - "--exclude=/README.md"
 
 - name: Create audio recoring dir
