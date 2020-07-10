@@ -29,6 +29,9 @@
     state: import
   when: db_create.changed
 
+
+### Handle talkgroups
+
 - name: Get current talkgroup setup
   command: >
     mysql --user={{ svxportal_db_user }}
@@ -39,7 +42,7 @@
           --execute="SELECT * FROM Talkgroup"
   check_mode: False
   changed_when: False
-  register: check_portal_version
+  register: get_current_talkgroups
 
 - name: Populate the current_talkgroups data structure
   set_fact:
@@ -50,7 +53,7 @@
         'name':   x[2],
         'color':  x[3]
         }] }}
-  loop: "{{ check_portal_version.stdout_lines }}"
+  loop: "{{ get_current_talkgroups.stdout_lines }}"
 
 - name: Find out which talkgroups to add and remove
   set_fact:
@@ -65,12 +68,56 @@
 - name: Add the following talkgroups
   debug: var=add_talkgroups
 
+
+### Handle web users
+
+- name: Get current user list setup
+  command: >
+    mysql --user={{ svxportal_db_user }}
+          --password={{ svxportal_db_password }}
+          {{ svxportal_db_name }}
+          --batch --skip-column-names --protocol=socket
+          --socket={{ svxportal_db_sock }}
+          --execute="SELECT * FROM users"
+  check_mode: False
+  changed_when: False
+  register: get_current_users
+
+- name: Populate the current_users data structure
+  set_fact:
+    current_users: >-
+      {% set x = item.split('\t') -%}
+      {{ (current_users|d([])) + [{
+        'username': x[1],
+        'password': x[2],
+        'level':  x[3]|int,
+        'is_admin': x[4]|bool,
+        'firstname': x[5],
+        'lastname': x[6]
+        }] }}
+  loop: "{{ get_current_users.stdout_lines }}"
+
+- name: Find out which users to add and remove
+  set_fact:
+    remove_users: >-
+      {{ (current_users|d([])) | difference(svxportal_users|d([])) }}
+    add_users: >-
+      {{ svxportal_users|d([]) | difference(current_users|d([])) }}
+
+- name: Remove the following users
+  debug: var=remove_users
+
+- name: Add the following users
+  debug: var=add_users
+
 - name: Copy SQL update script to the database server
   template:
     src: svxportal-ansible.sql.j2
     dest: /tmp/svxportal-ansible.sql
     mode: 0600
-  when: add_talkgroups|length + remove_talkgroups|length > 0
+  when: >-
+    add_talkgroups|length + remove_talkgroups|length > 0 or
+    add_users|length + remove_users|length > 0
 
 - name: Load SQL database updates
   mysql_db:
@@ -78,7 +125,9 @@
     login_unix_socket: "{{ svxportal_db_sock }}"
     target: "/tmp/svxportal-ansible.sql"
     state: import
-  when: add_talkgroups|length + remove_talkgroups|length > 0
+  when: >-
+    add_talkgroups|length + remove_talkgroups|length > 0 or
+    add_users|length + remove_users|length > 0
 
 - name: Create DB user for the web application to use
   mysql_user:

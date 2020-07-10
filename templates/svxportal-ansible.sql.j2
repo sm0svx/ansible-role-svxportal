@@ -8,3 +8,14 @@ INSERT INTO Talkgroup (TG,TXT,Collor) VALUES ({{ item.tg }},'{{ item.name }}','{
 {% endfor %}
 UNLOCK TABLES;
 {% endif %}
+
+{% if remove_users|length + add_users|length > 0 %}
+LOCK TABLES users WRITE;
+{% for item in remove_users %}
+DELETE FROM users WHERE Username='{{ item.username }}';
+{% endfor %}
+{% for item in add_users %}
+INSERT INTO users (Username,Password,level,Is_admin,Firstname,lastname) VALUES ('{{ item.username }}','{{ item.password }}',{{ item.level }},{{ item.is_admin }},'{{ item.firstname }}','{{ item.lastname }}');
+{% endfor %}
+UNLOCK TABLES;
+{% endif %}

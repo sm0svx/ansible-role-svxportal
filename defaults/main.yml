@@ -40,11 +40,32 @@ svxportal_default_map_pos:
 # The default map zoom level
 svxportal_default_zoom: 5
 
+# SvxPortal web accounts
+svxportal_users:
+  - username: 'svxportal'
+    password: "{{ 'svxportal' | hash('md5') }}"
+    firstname: 'svxportal'
+    lastname: 'install'
+    is_admin: true
+    level: 3
+
 # Talkgroup setup
-svxportal_talkgroups: []
-#  - tg: 240
-#    name: 'Sweden'
-#    color: '#0ff220'
-#  - tg: 2400
-#    name: 'Stockholm Area'
-#    color: '#de50c4'
+svxportal_talkgroups:
+  - tg: 91
+    name: 'World-wide'
+    color: '#0ff220'
+  - tg: 92
+    name: 'Europe'
+    color: '#0ff220'
+  - tg: 93
+    name: 'North America'
+    color: '#0ff220'
+  - tg: 94
+    name: 'Asia, Middle East'
+    color: '#0ff220'
+  - tg: 95
+    name: 'Australia, New Zeland'
+    color: '#0ff220'
+  - tg: 240
+    name: 'Sweden'
+    color: '#0000ff'
