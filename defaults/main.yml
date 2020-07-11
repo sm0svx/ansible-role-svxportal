@@ -40,6 +40,18 @@ svxportal_default_map_pos:
 # The default map zoom level
 svxportal_default_zoom: 5
 
+# SvxPortal web environment settings
+svxportal_settings:
+  HIDE_LANGUGE_BAR: false
+  USE_CUSTOM_SIDBAR_HEADER: false
+  USE_EXTERNAL_URL: true
+  iframe_documentation_url: 'http://docs.example.org/dokuwiki/doku.php?id=svxreflector&do=export_xhtml'
+  USE_LOGIN: false
+  PLAYER_TALKGROUP_DEFAULT: 240
+  SEND_MAIL_TO_SYSOP: false
+  SYSMATER_MAIL: 'info@example.org'
+  SYSTEM_MAIL: 'svxportal@example.org'
+
 # SvxPortal web accounts
 svxportal_users:
   - username: 'svxportal'

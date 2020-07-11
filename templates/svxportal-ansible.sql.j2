@@ -1,4 +1,7 @@
 {% if remove_talkgroups|length + add_talkgroups|length > 0 %}
+--
+-- Update the Talkgroup table
+--
 LOCK TABLES Talkgroup WRITE;
 {% for item in remove_talkgroups %}
 DELETE FROM Talkgroup WHERE TG={{ item.tg }};
@@ -7,9 +10,12 @@ DELETE FROM Talkgroup WHERE TG={{ item.tg }};
 INSERT INTO Talkgroup (TG,TXT,Collor) VALUES ({{ item.tg }},'{{ item.name }}','{{ item.color }}');
 {% endfor %}
 UNLOCK TABLES;
-{% endif %}
 
+{% endif %}
 {% if remove_users|length + add_users|length > 0 %}
+--
+-- Update the users table
+--
 LOCK TABLES users WRITE;
 {% for item in remove_users %}
 DELETE FROM users WHERE Username='{{ item.username }}';
@@ -18,4 +24,16 @@ DELETE FROM users WHERE Username='{{ item.username }}';
 INSERT INTO users (Username,Password,level,Is_admin,Firstname,lastname) VALUES ('{{ item.username }}','{{ item.password }}',{{ item.level }},{{ item.is_admin }},'{{ item.firstname }}','{{ item.lastname }}');
 {% endfor %}
 UNLOCK TABLES;
+
+{% endif %}
+{% if update_settings.keys()|length > 0 %}
+--
+-- Update the Settings table
+--
+LOCK TABLES Settings WRITE;
+{% for name,value in update_settings.items() %}
+UPDATE Settings SET value='{{ value }}' WHERE Define='{{ name }}';
+{% endfor %}
+UNLOCK TABLES;
+
 {% endif %}

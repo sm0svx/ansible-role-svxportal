@@ -1,4 +1,13 @@
 ---
+- name: Initialize internal variables
+  set_fact:
+    remove_talkgroups: []
+    add_talkgroups: []
+    remove_users: []
+    add_users: []
+    update_settings: {}
+  tags: always
+
 - name: Ensure that the database server is started
   service:
     name: "{{ svxportal_db_service }}"
@@ -29,9 +38,18 @@
     state: import
   when: db_create.changed
 
+- name: Create DB user for the web application to use
+  mysql_user:
+    name: "{{ svxportal_db_user }}"
+    password: "{{ svxportal_db_password }}"
+    priv: "{{ svxportal_db_name }}.*:ALL"
+    login_unix_socket: "{{ svxportal_db_sock }}"
+    state: present
+  no_log: True
+
 
 ### Handle talkgroups
-
+# FIXME: Skip talkgroup setup if svxportal_talkgroups is not set
 - name: Get current talkgroup setup
   command: >
     mysql --user={{ svxportal_db_user }}
@@ -42,6 +60,7 @@
           --execute="SELECT * FROM Talkgroup"
   check_mode: False
   changed_when: False
+  no_log: True
   register: get_current_talkgroups
 
 - name: Populate the current_talkgroups data structure
@@ -70,7 +89,7 @@
 
 
 ### Handle web users
-
+# FIXME: Skip user setup if svxportal_users is not set
 - name: Get current user list setup
   command: >
     mysql --user={{ svxportal_db_user }}
@@ -81,6 +100,7 @@
           --execute="SELECT * FROM users"
   check_mode: False
   changed_when: False
+  no_log: True
   register: get_current_users
 
 - name: Populate the current_users data structure
@@ -96,6 +116,7 @@
         'lastname': x[6]
         }] }}
   loop: "{{ get_current_users.stdout_lines }}"
+  no_log: True
 
 - name: Find out which users to add and remove
   set_fact:
@@ -110,6 +131,48 @@
 - name: Add the following users
   debug: var=add_users
 
+
+### Handle Settings
+
+- name: Get current settings
+  command: >
+    mysql --user={{ svxportal_db_user }}
+          --password={{ svxportal_db_password }}
+          {{ svxportal_db_name }}
+          --batch --skip-column-names --protocol=socket
+          --socket={{ svxportal_db_sock }}
+          --execute="SELECT Define,Value FROM Settings"
+  check_mode: False
+  changed_when: False
+  no_log: True
+  register: get_current_settings
+  tags: devel
+
+- name: Populate the update_settings data structure
+  set_fact:
+    update_settings: >-
+      {% set x = item.split('\t') -%}
+      {% set settings = update_settings -%}
+      {% if x[0] in svxportal_settings -%}
+        {% set val = svxportal_settings[x[0]] -%}
+        {% if val|type_debug == 'bool' -%}
+          {% set val = val | bool | ternary(1, 0) -%}
+        {% endif -%}
+        {% if x[1] != val|string -%}
+          {% set settings = settings | combine({x[0]: val}) -%}
+        {% endif -%}
+      {% endif -%}
+      {{ settings }}
+  loop: "{{ get_current_settings.stdout_lines }}"
+  tags: devel
+
+- name: Update these settings
+  debug: var=update_settings
+  tags: devel
+
+
+### Apply all database updates
+
 - name: Copy SQL update script to the database server
   template:
     src: svxportal-ansible.sql.j2
@@ -117,7 +180,9 @@
     mode: 0600
   when: >-
     add_talkgroups|length + remove_talkgroups|length > 0 or
-    add_users|length + remove_users|length > 0
+    add_users|length + remove_users|length > 0 or
+    update_settings.keys()|length > 0
+  tags: devel
 
 - name: Load SQL database updates
   mysql_db:
@@ -127,13 +192,6 @@
     state: import
   when: >-
     add_talkgroups|length + remove_talkgroups|length > 0 or
-    add_users|length + remove_users|length > 0
-
-- name: Create DB user for the web application to use
-  mysql_user:
-    name: "{{ svxportal_db_user }}"
-    password: "{{ svxportal_db_password }}"
-    priv: "{{ svxportal_db_name }}.*:ALL"
-    login_unix_socket: "{{ svxportal_db_sock }}"
-    state: present
-  no_log: True
+    add_users|length + remove_users|length > 0 or
+    update_settings.keys()|length > 0
+  tags: devel
