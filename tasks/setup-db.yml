@@ -57,7 +57,7 @@
           {{ svxportal_db_name }}
           --batch --skip-column-names --protocol=socket
           --socket={{ svxportal_db_sock }}
-          --execute="SELECT * FROM Talkgroup"
+          --execute="SELECT TG,TXT,Collor FROM Talkgroup"
   check_mode: False
   changed_when: False
   no_log: True
@@ -68,9 +68,9 @@
     current_talkgroups: >-
       {% set x = item.split('\t') -%}
       {{ (current_talkgroups|d([])) + [{
-        'tg':     x[1]|int,
-        'name':   x[2],
-        'color':  x[3]
+        'tg':     x[0]|int,
+        'name':   x[1],
+        'color':  x[2]
         }] }}
   loop: "{{ get_current_talkgroups.stdout_lines }}"
 
@@ -97,7 +97,7 @@
           {{ svxportal_db_name }}
           --batch --skip-column-names --protocol=socket
           --socket={{ svxportal_db_sock }}
-          --execute="SELECT * FROM users"
+          --execute="SELECT Username,Password,level,Is_admin,Firstname,lastname FROM users"
   check_mode: False
   changed_when: False
   no_log: True
@@ -108,12 +108,12 @@
     current_users: >-
       {% set x = item.split('\t') -%}
       {{ (current_users|d([])) + [{
-        'username': x[1],
-        'password': x[2],
-        'level':  x[3]|int,
-        'is_admin': x[4]|bool,
-        'firstname': x[5],
-        'lastname': x[6]
+        'username': x[0],
+        'password': x[1],
+        'level':  x[2]|int,
+        'is_admin': x[3]|bool,
+        'firstname': x[4],
+        'lastname': x[5]
         }] }}
   loop: "{{ get_current_users.stdout_lines }}"
   no_log: True
