@@ -41,43 +41,43 @@ svxportal_default_map_pos:
 svxportal_default_zoom: 5
 
 # SvxPortal web environment settings
-svxportal_settings:
-  HIDE_LANGUGE_BAR: false
-  USE_CUSTOM_SIDBAR_HEADER: false
-  USE_EXTERNAL_URL: true
-  iframe_documentation_url: 'http://docs.example.org/dokuwiki/doku.php?id=svxreflector&do=export_xhtml'
-  USE_LOGIN: false
-  PLAYER_TALKGROUP_DEFAULT: 240
-  SEND_MAIL_TO_SYSOP: false
-  SYSMATER_MAIL: 'info@example.org'
-  SYSTEM_MAIL: 'svxportal@example.org'
+#svxportal_settings:
+#  HIDE_LANGUGE_BAR: false
+#  USE_CUSTOM_SIDBAR_HEADER: false
+#  USE_EXTERNAL_URL: true
+#  iframe_documentation_url: 'http://docs.example.org/dokuwiki/doku.php?id=svxreflector&do=export_xhtml'
+#  USE_LOGIN: false
+#  PLAYER_TALKGROUP_DEFAULT: 240
+#  SEND_MAIL_TO_SYSOP: false
+#  SYSMATER_MAIL: 'info@example.org'
+#  SYSTEM_MAIL: 'svxportal@example.org'
 
 # SvxPortal web accounts
-svxportal_users:
-  - username: 'svxportal'
-    password: "{{ 'svxportal' | hash('md5') }}"
-    firstname: 'svxportal'
-    lastname: 'install'
-    is_admin: true
-    level: 3
+#svxportal_users:
+#  - username: 'svxportal'
+#    password: "{{ 'svxportal' | hash('md5') }}"
+#    firstname: 'svxportal'
+#    lastname: 'install'
+#    is_admin: true
+#    level: 3
 
 # Talkgroup setup
-svxportal_talkgroups:
-  - tg: 91
-    name: 'World-wide'
-    color: '#0ff220'
-  - tg: 92
-    name: 'Europe'
-    color: '#0ff220'
-  - tg: 93
-    name: 'North America'
-    color: '#0ff220'
-  - tg: 94
-    name: 'Asia, Middle East'
-    color: '#0ff220'
-  - tg: 95
-    name: 'Australia, New Zeland'
-    color: '#0ff220'
-  - tg: 240
-    name: 'Sweden'
-    color: '#0000ff'
+#svxportal_talkgroups:
+#  - tg: 91
+#    name: 'World-wide'
+#    color: '#0ff220'
+#  - tg: 92
+#    name: 'Europe'
+#    color: '#0ff220'
+#  - tg: 93
+#    name: 'North America'
+#    color: '#0ff220'
+#  - tg: 94
+#    name: 'Asia, Middle East'
+#    color: '#0ff220'
+#  - tg: 95
+#    name: 'Australia, New Zeland'
+#    color: '#0ff220'
+#  - tg: 240
+#    name: 'Sweden'
+#    color: '#0000ff'

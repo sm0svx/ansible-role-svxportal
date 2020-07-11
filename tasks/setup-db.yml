@@ -47,142 +47,28 @@
     state: present
   no_log: True
 
+- name: Set up talkgroups in database
+  include_tasks: setup-db-talkgroups.yml
+  when: svxportal_talkgroups is defined
 
-### Handle talkgroups
-# FIXME: Skip talkgroup setup if svxportal_talkgroups is not set
-- name: Get current talkgroup setup
-  command: >
-    mysql --user={{ svxportal_db_user }}
-          --password={{ svxportal_db_password }}
-          {{ svxportal_db_name }}
-          --batch --skip-column-names --protocol=socket
-          --socket={{ svxportal_db_sock }}
-          --execute="SELECT TG,TXT,Collor FROM Talkgroup"
-  check_mode: False
-  changed_when: False
-  no_log: True
-  register: get_current_talkgroups
+- name: Set up users in database
+  include_tasks: setup-db-users.yml
+  when: svxportal_users is defined
 
-- name: Populate the current_talkgroups data structure
-  set_fact:
-    current_talkgroups: >-
-      {% set x = item.split('\t') -%}
-      {{ (current_talkgroups|d([])) + [{
-        'tg':     x[0]|int,
-        'name':   x[1],
-        'color':  x[2]
-        }] }}
-  loop: "{{ get_current_talkgroups.stdout_lines }}"
-
-- name: Find out which talkgroups to add and remove
-  set_fact:
-    remove_talkgroups: >-
-      {{ (current_talkgroups|d([])) | difference(svxportal_talkgroups|d([])) }}
-    add_talkgroups: >-
-      {{ svxportal_talkgroups|d([]) | difference(current_talkgroups|d([])) }}
-
-- name: Remove the following talkgroups
-  debug: var=remove_talkgroups
-
-- name: Add the following talkgroups
-  debug: var=add_talkgroups
-
-
-### Handle web users
-# FIXME: Skip user setup if svxportal_users is not set
-- name: Get current user list setup
-  command: >
-    mysql --user={{ svxportal_db_user }}
-          --password={{ svxportal_db_password }}
-          {{ svxportal_db_name }}
-          --batch --skip-column-names --protocol=socket
-          --socket={{ svxportal_db_sock }}
-          --execute="SELECT Username,Password,level,Is_admin,Firstname,lastname FROM users"
-  check_mode: False
-  changed_when: False
-  no_log: True
-  register: get_current_users
-
-- name: Populate the current_users data structure
-  set_fact:
-    current_users: >-
-      {% set x = item.split('\t') -%}
-      {{ (current_users|d([])) + [{
-        'username': x[0],
-        'password': x[1],
-        'level':  x[2]|int,
-        'is_admin': x[3]|bool,
-        'firstname': x[4],
-        'lastname': x[5]
-        }] }}
-  loop: "{{ get_current_users.stdout_lines }}"
-  no_log: True
-
-- name: Find out which users to add and remove
-  set_fact:
-    remove_users: >-
-      {{ (current_users|d([])) | difference(svxportal_users|d([])) }}
-    add_users: >-
-      {{ svxportal_users|d([]) | difference(current_users|d([])) }}
-
-- name: Remove the following users
-  debug: var=remove_users
-
-- name: Add the following users
-  debug: var=add_users
-
-
-### Handle Settings
-
-- name: Get current settings
-  command: >
-    mysql --user={{ svxportal_db_user }}
-          --password={{ svxportal_db_password }}
-          {{ svxportal_db_name }}
-          --batch --skip-column-names --protocol=socket
-          --socket={{ svxportal_db_sock }}
-          --execute="SELECT Define,Value FROM Settings"
-  check_mode: False
-  changed_when: False
-  no_log: True
-  register: get_current_settings
-  tags: devel
-
-- name: Populate the update_settings data structure
-  set_fact:
-    update_settings: >-
-      {% set x = item.split('\t') -%}
-      {% set settings = update_settings -%}
-      {% if x[0] in svxportal_settings -%}
-        {% set val = svxportal_settings[x[0]] -%}
-        {% if val|type_debug == 'bool' -%}
-          {% set val = val | bool | ternary(1, 0) -%}
-        {% endif -%}
-        {% if x[1] != val|string -%}
-          {% set settings = settings | combine({x[0]: val}) -%}
-        {% endif -%}
-      {% endif -%}
-      {{ settings }}
-  loop: "{{ get_current_settings.stdout_lines }}"
-  tags: devel
-
-- name: Update these settings
-  debug: var=update_settings
-  tags: devel
-
-
-### Apply all database updates
+- name: Update settings in database
+  include_tasks: setup-db-settings.yml
+  when: svxportal_settings is defined
 
 - name: Copy SQL update script to the database server
   template:
     src: svxportal-ansible.sql.j2
     dest: /tmp/svxportal-ansible.sql
     mode: 0600
+  register: copy_sql_update_script
   when: >-
     add_talkgroups|length + remove_talkgroups|length > 0 or
     add_users|length + remove_users|length > 0 or
     update_settings.keys()|length > 0
-  tags: devel
 
 - name: Load SQL database updates
   mysql_db:
@@ -190,8 +76,4 @@
     login_unix_socket: "{{ svxportal_db_sock }}"
     target: "/tmp/svxportal-ansible.sql"
     state: import
-  when: >-
-    add_talkgroups|length + remove_talkgroups|length > 0 or
-    add_users|length + remove_users|length > 0 or
-    update_settings.keys()|length > 0
-  tags: devel
+  when: copy_sql_update_script.changed

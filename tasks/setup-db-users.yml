@@ -1,0 +1,41 @@
+---
+- name: Get current user list setup
+  command: >
+    mysql --user={{ svxportal_db_user }}
+          --password={{ svxportal_db_password }}
+          {{ svxportal_db_name }}
+          --batch --skip-column-names --protocol=socket
+          --socket={{ svxportal_db_sock }}
+          --execute="SELECT Username,Password,level,Is_admin,Firstname,lastname FROM users"
+  check_mode: False
+  changed_when: False
+  no_log: True
+  register: get_current_users
+
+- name: Populate the current_users data structure
+  set_fact:
+    current_users: >-
+      {% set x = item.split('\t') -%}
+      {{ (current_users|d([])) + [{
+        'username': x[0],
+        'password': x[1],
+        'level':  x[2]|int,
+        'is_admin': x[3]|bool,
+        'firstname': x[4],
+        'lastname': x[5]
+        }] }}
+  loop: "{{ get_current_users.stdout_lines }}"
+  no_log: True
+
+- name: Find out which users to add and remove
+  set_fact:
+    remove_users: >-
+      {{ (current_users|d([])) | difference(svxportal_users|d([])) }}
+    add_users: >-
+      {{ svxportal_users|d([]) | difference(current_users|d([])) }}
+
+- name: Remove the following users
+  debug: var=remove_users
+
+- name: Add the following users
+  debug: var=add_users

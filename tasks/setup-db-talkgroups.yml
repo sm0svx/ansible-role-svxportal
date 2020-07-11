@@ -1,0 +1,37 @@
+---
+- name: Get current talkgroup setup
+  command: >
+    mysql --user={{ svxportal_db_user }}
+          --password={{ svxportal_db_password }}
+          {{ svxportal_db_name }}
+          --batch --skip-column-names --protocol=socket
+          --socket={{ svxportal_db_sock }}
+          --execute="SELECT TG,TXT,Collor FROM Talkgroup"
+  check_mode: False
+  changed_when: False
+  no_log: True
+  register: get_current_talkgroups
+
+- name: Populate the current_talkgroups data structure
+  set_fact:
+    current_talkgroups: >-
+      {% set x = item.split('\t') -%}
+      {{ (current_talkgroups|d([])) + [{
+        'tg':     x[0]|int,
+        'name':   x[1],
+        'color':  x[2]
+        }] }}
+  loop: "{{ get_current_talkgroups.stdout_lines }}"
+
+- name: Find out which talkgroups to add and remove
+  set_fact:
+    remove_talkgroups: >-
+      {{ (current_talkgroups|d([])) | difference(svxportal_talkgroups|d([])) }}
+    add_talkgroups: >-
+      {{ svxportal_talkgroups|d([]) | difference(current_talkgroups|d([])) }}
+
+- name: Remove the following talkgroups
+  debug: var=remove_talkgroups
+
+- name: Add the following talkgroups
+  debug: var=add_talkgroups

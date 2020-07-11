@@ -1,0 +1,33 @@
+---
+- name: Get current settings
+  command: >
+    mysql --user={{ svxportal_db_user }}
+          --password={{ svxportal_db_password }}
+          {{ svxportal_db_name }}
+          --batch --skip-column-names --protocol=socket
+          --socket={{ svxportal_db_sock }}
+          --execute="SELECT Define,Value FROM Settings"
+  check_mode: False
+  changed_when: False
+  no_log: True
+  register: get_current_settings
+
+- name: Populate the update_settings data structure
+  set_fact:
+    update_settings: >-
+      {% set x = item.split('\t') -%}
+      {% set settings = update_settings -%}
+      {% if x[0] in svxportal_settings -%}
+        {% set val = svxportal_settings[x[0]] -%}
+        {% if val|type_debug == 'bool' -%}
+          {% set val = val | bool | ternary(1, 0) -%}
+        {% endif -%}
+        {% if x[1] != val|string -%}
+          {% set settings = settings | combine({x[0]: val}) -%}
+        {% endif -%}
+      {% endif -%}
+      {{ settings }}
+  loop: "{{ get_current_settings.stdout_lines }}"
+
+- name: Update these settings
+  debug: var=update_settings
