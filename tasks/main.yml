@@ -8,6 +8,10 @@
   tags:
     - always
 
+- name: Sanity check
+  assert:
+    that: svxportal_public_hostname is defined
+
 - name: Install required packages
   apt:
     name: "{{ svxportal_required_packages }}"

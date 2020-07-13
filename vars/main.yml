@@ -1,2 +1,8 @@
 ---
 svxportal_proxy_dir: "/reflector_proxy/"
+
+svxportal_tls_key_path: "/etc/ssl/private/{{ svxportal_public_hostname }}.key"
+svxportal_tls_csr_path: "/etc/ssl/csr/{{ svxportal_public_hostname }}.csr"
+svxportal_tls_crt_path: "/etc/ssl/certs/{{ svxportal_public_hostname }}.crt"
+svxportal_tls_intermediate_path: "/etc/ssl/certs/{{ svxportal_public_hostname }}-intermediate.pem"
+svxportal_tls_fullchain_path: "/etc/ssl/certs/{{ svxportal_public_hostname }}-fullchain.pem"

@@ -1,0 +1,24 @@
+---
+- name: Check if certificate files exist
+  stat:
+    path: "{{ item }}"
+  with_items:
+    - "{{ svxportal_tls_key_path }}"
+    - "{{ svxportal_tls_crt_path }}"
+    - "{{ svxportal_tls_intermediate_path }}"
+  register: check_cert_files
+
+- name: Set up the all_cert_files_exist fact
+  set_fact:
+    all_cert_files_exist: >-
+      {{ check_cert_files.results | map(attribute='stat.exists') |
+         select('equalto', false) | list | length == 0 }}
+
+- name: "Ensure that the SvxPortal Apache SSL site is {{ all_cert_files_exist | ternary('en', 'dis') }}abled"
+  command: >
+    /usr/sbin/a2{{ all_cert_files_exist | ternary('en', 'dis') }}site 002-svxportal-ssl
+  args:
+    creates: "{{ all_cert_files_exist | ternary('/etc/apache2/sites-enabled/002-svxportal-ssl.conf', omit) }}"
+    removes: "{{ (not all_cert_files_exist) | ternary('/etc/apache2/sites-enabled/002-svxportal-ssl.conf', omit) }}"
+  notify:
+    - restart apache

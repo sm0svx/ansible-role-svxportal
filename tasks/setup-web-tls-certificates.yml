@@ -1,0 +1,142 @@
+---
+- name: Ensure that the SSL Apache module is enabled
+  command: /usr/sbin/a2enmod ssl
+  args:
+    creates: /etc/apache2/mods-enabled/ssl.conf
+  notify:
+    - restart apache
+
+- name: Ensure that all certificate paths exist
+  file:
+    name: "{{ item | dirname }}"
+    state: directory
+  with_items:
+    - "{{ svxportal_tls_key_path }}"
+    - "{{ svxportal_tls_csr_path }}"
+    - "{{ svxportal_tls_crt_path }}"
+  loop_control:
+    label: "{{ item | dirname }}"
+
+- name: Generate a private key for the certificate
+  openssl_privatekey:
+    path: "{{ svxportal_tls_key_path }}"
+    type: RSA
+    size: 4096
+    owner: root
+    group: ssl-cert
+    mode: 0640
+    state: present
+
+- name: Generate a certificate signing request
+  openssl_csr:
+    path: "{{ svxportal_tls_csr_path }}"
+    privatekey_path: "{{ svxportal_tls_key_path }}"
+    common_name: "{{ svxportal_public_hostname }}"
+    #use_common_name_for_san: yes
+    subject_alt_name: "DNS:{{ svxportal_public_hostname }}"
+    #force: yes
+    digest: sha256
+    owner: root
+    group: root
+    mode: 0644
+    state: present
+
+- block:
+    - name: Load ACME accout key
+      include_vars: "{{ svxportal_acme_key_vault_path }}"
+  rescue:
+    - name: Generate an ACME account key
+      vars:
+        ansible_become: false
+      openssl_privatekey:
+        path: "{{ svxportal_acme_key_path }}"
+        type: RSA
+        size: 4096
+        #owner: root
+        #group: ssl-cert
+        mode: 0600
+        state: present
+      delegate_to: localhost
+
+    - name: Manually encrypt the ACME account key
+      pause:
+        prompt: |-
+          Run the following command manually, in another terminal, to create an
+          encrypted version of the ACME account key.
+
+            ansible-vault encrypt_string --stdin-name svxportal_acme_account_key < {{ svxportal_acme_key_path }} > {{ svxportal_acme_key_vault_path }} && rm -f {{ svxportal_acme_key_path }}
+
+            When done, press ENTER to continue or Ctrl-C to abort
+
+    - name: Load ACME accout key
+      include_vars: "{{ svxportal_acme_key_vault_path }}"
+
+- name: Ensure ACME account is created and up to date
+  vars:
+    ansible_become: false
+  acme_account:
+    account_key_content: "{{ svxportal_acme_account_key }}"
+    #account_key_src: "{{ svxportal_acme_key_path }}"
+    acme_directory: "{{ svxportal_acme_directory }}"
+    acme_version: 2
+    allow_creation: yes
+    contact:
+      "{{ svxportal_acme_contact }}"
+    state: present
+    terms_agreed: "{{ svxportal_acme_terms_agreed }}"
+  delegate_to: localhost
+  run_once: true
+
+- name: Request cert signing if cert is nonexistent or if it's about to expire
+  vars:
+    ansible_become: false
+  acme_certificate:
+    acme_directory: "{{ svxportal_acme_directory }}"
+    acme_version: 2
+    account_key_content: "{{ svxportal_acme_account_key }}"
+    #account_key_src: {{ svxportal_acme_key }}
+    challenge: http-01
+    csr: "{{ svxportal_tls_csr_path }}"
+    dest: "{{ svxportal_tls_crt_path }}"
+    chain_dest: "{{ svxportal_tls_intermediate_path }}"
+    #fullchain_dest: "{{ svxportal_tls_fullchain_path }}"
+    remaining_days: "{{ svxportal_acme_remaining_days_renew }}"
+    modify_account: no
+  register: acme_challenge
+
+- name: Make sure that the challenge directory exist
+  file:
+    path: "{{ svxportal_html_dir }}/{{ acme_challenge['challenge_data'][svxportal_public_hostname]['http-01']['resource'] | dirname }}"
+    owner: root
+    group: root
+    mode: 0755
+    state: directory
+  when: acme_challenge is changed and svxportal_public_hostname in acme_challenge['challenge_data']
+
+- name: Copy challenge to http web root
+  copy:
+    dest: "{{ svxportal_html_dir }}/{{ acme_challenge['challenge_data'][svxportal_public_hostname]['http-01']['resource'] }}"
+    content: "{{ acme_challenge['challenge_data'][svxportal_public_hostname]['http-01']['resource_value'] }}"
+    owner: root
+    group: root
+    mode: 0644
+  when: acme_challenge is changed and svxportal_public_hostname in acme_challenge['challenge_data']
+
+- name: Let the challenge be validated and retrieve the cert and intermediate certificate
+  acme_certificate:
+    acme_directory: "{{ svxportal_acme_directory }}"
+    acme_version: 2
+    account_key_content: "{{ svxportal_acme_account_key }}"
+    #account_key_src: {{ svxportal_acme_key }}
+    challenge: http-01
+    csr: "{{ svxportal_tls_csr_path }}"
+    dest: "{{ svxportal_tls_crt_path }}"
+    chain_dest: "{{ svxportal_tls_intermediate_path }}"
+    #fullchain_dest: "{{ svxportal_tls_fullchain_path }}"
+    remaining_days: "{{ svxportal_acme_remaining_days_renew }}"
+    modify_account: no
+    data: "{{ acme_challenge }}"
+
+- name: Clear ACME account key variable
+  set_fact:
+    svxportal_acme_account_key:

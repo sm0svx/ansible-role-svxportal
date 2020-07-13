@@ -1,0 +1,38 @@
+<IfModule mod_ssl.c>
+    <VirtualHost *:{{ svxportal_https_port }}>
+        ServerName {{ svxportal_public_hostname }}
+        #ServerAdmin webmaster@localhost
+        DocumentRoot {{ svxportal_html_dir }}
+
+        ErrorLog ${APACHE_LOG_DIR}/svxportal-error.log
+        CustomLog ${APACHE_LOG_DIR}/svxportal-access.log combined
+
+        SSLEngine on
+        SSLCertificateFile      {{ svxportal_tls_crt_path }}
+        SSLCertificateKeyFile   {{ svxportal_tls_key_path }}
+        SSLCertificateChainFile {{ svxportal_tls_intermediate_path }}
+        SSLProtocol -all +TLSv1.2 +TLSv1.3
+
+        <Directory {{ svxportal_html_dir }}>
+            Options -Indexes
+            <FilesMatch "^(config\.php)$>
+                Require all denied
+            </FilesMatch>
+        </Directory>
+
+        <Directory "{{ svxportal_html_dir }}/sql">
+            Require all denied
+        </Directory>
+
+        <FilesMatch "\.(cgi|shtml|phtml|php)$">
+                        SSLOptions +StdEnvVars
+        </FilesMatch>
+
+{% if svxportal_proxy_url|urlsplit('path') != svxportal_proxy_dir %}
+        Alias "{{ svxportal_proxy_url|urlsplit('path') }}" "{{ svxportal_html_dir }}{{ svxportal_proxy_dir }}"
+
+{% endif %}
+    </VirtualHost>
+</IfModule>
+
+# vim: syntax=apache ts=4 sw=4 sts=4 sr noet

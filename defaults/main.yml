@@ -8,14 +8,23 @@ svxportal_git_version: "master"
 # The SvxReflector URL for fetching the status
 svxportal_reflector_status_url: "http://localhost:8080/status"
 
+# The public hostname used to access the SvxPortal web page
+#svxportal_public_hostname: "svxportal.example.org"
+
+# Set the TCP port to use for http if it is not 80
+#svxportal_public_http_port: 80
+
+# Set the TCP port to use for https if it is not 443
+#svxportal_public_http_port: 443
+
 # The public URL to the reflector proxy
-svxportal_proxy_url: "http://svxportal.example.com/reflector_proxy/"
+svxportal_proxy_url: "https://{{ svxportal_public_hostname }}{% if svxportal_public_https_port is defined %}:{{ svxportal_public_https_port }}{% endif %}{{ svxportal_proxy_dir }}"
 
 # The path to the directory where recordings are stored
 svxportal_recording_dir: "{{ svxportal_html_dir }}/svxrecording"
 
 # Live listen URL
-svxportal_live_link_url: "http://svxportal.example.com:8000/svxcard96"
+svxportal_live_link_url: "https://{{ svxportal_public_hostname }}:8000/svxcard96"
 
 # Database settings
 svxportal_db_host: "localhost"
@@ -26,11 +35,14 @@ svxportal_db_name: "svx"
 # Disable the default site in Apache
 svxportal_disable_default_site: True
 
-# Webserver port
+# TCP port used by the webserver for unencypted http
 svxportal_http_port: 80
 
+# TCP port used by the webserver for encypted http (https)
+svxportal_https_port: 443
+
 # Iframe under system description
-svxportal_documentation_url: "http://docs.example.com/svxreflector"
+svxportal_documentation_url: "https://{{ svxportal_public_hostname }}{% if svxportal_public_https_port is defined %}:{{ svxportal_public_https_port }}{% endif %}/docs/"
 
 # The default map postition
 svxportal_default_map_pos:
@@ -40,12 +52,36 @@ svxportal_default_map_pos:
 # The default map zoom level
 svxportal_default_zoom: 5
 
+# Where to store the temporarily unencrypted ACME account key during generation
+svxportal_acme_key_path: "files/acme_account.key"
+
+# Where to store the encrypted ACME account key
+svxportal_acme_key_vault_path: "{{ svxportal_acme_key_path }}.vault"
+
+# Use the following ACME directory URL. Start by using the staging URL until
+# everything seem to work. Then switch to the production URL to get a real
+# certificate.
+svxportal_acme_directory: "https://acme-staging-v02.api.letsencrypt.org/directory"
+#svxportal_acme_directory: "https://acme-v02.api.letsencrypt.org/directory"
+
+# Where to send e-mails about certificates that are about to expire
+svxportal_acme_contact:
+  - mailto:admin1@example.org
+  - mailto:admin2@example.org
+
+# Set this to 'yes' if you accept the terms of service for the ACME service
+# provider.
+svxportal_acme_terms_agreed: no
+
+# Renew certificate when this many days remain of certificate validity
+svxportal_acme_remaining_days_renew: 10
+
 # SvxPortal web environment settings
 #svxportal_settings:
 #  HIDE_LANGUGE_BAR: false
 #  USE_CUSTOM_SIDBAR_HEADER: false
 #  USE_EXTERNAL_URL: true
-#  iframe_documentation_url: 'http://docs.example.org/dokuwiki/doku.php?id=svxreflector&do=export_xhtml'
+#  iframe_documentation_url: 'https://docs.example.org/dokuwiki/doku.php?id=svxreflector&do=export_xhtml'
 #  USE_LOGIN: false
 #  PLAYER_TALKGROUP_DEFAULT: 240
 #  SEND_MAIL_TO_SYSOP: false

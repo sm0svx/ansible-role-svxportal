@@ -40,20 +40,23 @@
     - src: "config.php.j2"
       dest: "config.php"
     - src: "proxy-config.php.j2"
-      dest: "reflector_proxy/config.php"
+      dest: "{{ svxportal_proxy_dir }}config.php"
 
-- name: Install the SvxPortal Apache site
+- name: Install the SvxPortal Apache site config files
   template:
-    src: 001-svxportal.conf.j2
-    dest: /etc/apache2/sites-available/001-svxportal.conf
+    src: "{{ item }}.j2"
+    dest: "/etc/apache2/sites-available/{{ item }}"
     owner: root
     group: root
     mode: 0644
   notify:
     - restart apache
+  with_items:
+    - 001-svxportal.conf
+    - 002-svxportal-ssl.conf
 
 - name: Disable the default Apache site
-  command: a2dissite 000-default
+  command: /usr/sbin/a2dissite 000-default
   args:
     removes: /etc/apache2/sites-enabled/000-default.conf
   notify:
@@ -61,14 +64,23 @@
   when: svxportal_disable_default_site
 
 - name: Enable the SvxPortal Apache site
-  command: a2ensite 001-svxportal
+  command: /usr/sbin/a2ensite 001-svxportal
   args:
     creates: /etc/apache2/sites-enabled/001-svxportal.conf
   notify:
     - restart apache
 
-- name: Start http server
+- name: Enable SSL if correctly configured (pre TLS setup)
+  include_tasks: setup-web-enable-ssl-site.yml
+
+- name: Ensure that the http server is started
   service:
     name: "{{ svxportal_http_service }}"
     state: started
     enabled: yes
+
+- name: Set up TLS for the webserver
+  include_tasks: setup-web-tls-certificates.yml
+
+- name: Enable SSL if correctly configured (post TLS setup)
+  include_tasks: setup-web-enable-ssl-site.yml
