@@ -21,6 +21,25 @@
       - "--exclude=/svxrecording"
       - "--exclude=/README.md"
 
+- name: Find out which locales we need
+  find:
+    paths: "{{ svxportal_html_dir }}/locale"
+    patterns: '^\w+_\w+(?:\..*)?$'
+    use_regex: yes
+    file_type: directory
+  register: find_locales
+  tags: devel
+
+- name: Ensure required locales are installed
+  locale_gen:
+    name: "{{ item }}"
+    state: present
+  with_items:
+    "{{ find_locales.files | map(attribute='path') | map('basename') | list }}"
+  notify:
+    - restart apache
+  tags: devel
+
 - name: Create audio recoring dir
   file:
     path: "{{ svxportal_recording_dir }}"
