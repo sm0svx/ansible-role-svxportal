@@ -16,29 +16,12 @@
     set_remote_user: no
     use_ssh_args: yes
     rsync_opts:
+      - "--omit-dir-times"
+      - "--chmod=g-w"
       - "--exclude=.*"
       - "--exclude=config.php"
       - "--exclude=/svxrecording"
       - "--exclude=/README.md"
-
-- name: Find out which locales we need
-  find:
-    paths: "{{ svxportal_html_dir }}/locale"
-    patterns: '^\w+_\w+(?:\..*)?$'
-    use_regex: yes
-    file_type: directory
-  register: find_locales
-  tags: devel
-
-- name: Ensure required locales are installed
-  locale_gen:
-    name: "{{ item }}"
-    state: present
-  with_items:
-    "{{ find_locales.files | map(attribute='path') | map('basename') | list }}"
-  notify:
-    - restart apache
-  tags: devel
 
 - name: Create audio recoring dir
   file:
@@ -48,18 +31,32 @@
     mode: 0755
     state: directory
 
-- name: Configure
-  template:
-    src: "{{ item.src }}"
-    dest: "{{ svxportal_html_dir }}/{{ item.dest }}"
-    owner: root
-    group: root
-    mode: 0644
+- name: Set up configuration files for the web portal
+  include_tasks: setup-web-config-file.yml
   loop:
     - src: "config.php.j2"
-      dest: "config.php"
+      dest: "/config.php"
     - src: "proxy-config.php.j2"
       dest: "{{ svxportal_proxy_dir }}config.php"
+  loop_control:
+    loop_var: fileinfo
+
+- name: Find out which locales we need
+  find:
+    paths: "{{ svxportal_html_dir }}/locale"
+    patterns: '^\w+_\w+(?:\..*)?$'
+    use_regex: yes
+    file_type: directory
+  register: find_locales
+
+- name: Ensure required locales are installed
+  locale_gen:
+    name: "{{ item }}"
+    state: present
+  with_items:
+    "{{ find_locales.files | map(attribute='path') | map('basename') | list }}"
+  notify:
+    - restart apache
 
 - name: Install the SvxPortal Apache site config files
   template:

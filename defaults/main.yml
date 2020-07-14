@@ -11,14 +11,14 @@ svxportal_reflector_status_url: "http://localhost:8080/status"
 # The public hostname used to access the SvxPortal web page
 #svxportal_public_hostname: "svxportal.example.org"
 
-# Set the TCP port to use for http if it is not 80
-#svxportal_public_http_port: 80
+# Set the public TCP port to use for http if it is not 80
+svxportal_public_http_port: 80
 
-# Set the TCP port to use for https if it is not 443
-#svxportal_public_http_port: 443
+# Set the public TCP port to use for https if it is not 443
+svxportal_public_https_port: 443
 
 # The public URL to the reflector proxy
-svxportal_proxy_url: "https://{{ svxportal_public_hostname }}{% if svxportal_public_https_port is defined %}:{{ svxportal_public_https_port }}{% endif %}{{ svxportal_proxy_dir }}"
+svxportal_proxy_url: "https://{{ svxportal_public_hostname }}{% if svxportal_public_https_port != 443 %}:{{ svxportal_public_https_port }}{% endif %}{{ svxportal_proxy_dir }}"
 
 # The path to the directory where recordings are stored
 svxportal_recording_dir: "{{ svxportal_html_dir }}/svxrecording"
@@ -42,7 +42,7 @@ svxportal_http_port: 80
 svxportal_https_port: 443
 
 # Iframe under system description
-svxportal_documentation_url: "https://{{ svxportal_public_hostname }}{% if svxportal_public_https_port is defined %}:{{ svxportal_public_https_port }}{% endif %}/docs/"
+svxportal_documentation_url: "https://{{ svxportal_public_hostname }}{% if svxportal_public_https_port != 443 %}:{{ svxportal_public_https_port }}{% endif %}/docs/"
 
 # The default map postition
 svxportal_default_map_pos:

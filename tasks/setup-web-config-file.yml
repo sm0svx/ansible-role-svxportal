@@ -1,0 +1,16 @@
+---
+- name: Create directory for config file
+  file:
+    path: "{{ (svxportal_html_dir + fileinfo.dest) | dirname }}"
+    owner: root
+    group: root
+    mode: 0755
+    state: directory
+
+- name: Set up configuration files for the web portal
+  template:
+    src: "{{ fileinfo.src }}"
+    dest: "{{ svxportal_html_dir }}{{ fileinfo.dest }}"
+    owner: root
+    group: root
+    mode: 0644
