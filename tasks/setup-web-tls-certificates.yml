@@ -1,11 +1,4 @@
 ---
-- name: Ensure that the SSL Apache module is enabled
-  command: /usr/sbin/a2enmod ssl
-  args:
-    creates: /etc/apache2/mods-enabled/ssl.conf
-  notify:
-    - restart apache
-
 - name: Ensure that all certificate paths exist
   file:
     name: "{{ item | dirname }}"

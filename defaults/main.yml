@@ -17,14 +17,17 @@ svxportal_public_http_port: 80
 # Set the public TCP port to use for https if it is not 443
 svxportal_public_https_port: 443
 
-# The public URL to the reflector proxy
-svxportal_proxy_url: "https://{{ svxportal_public_hostname }}{% if svxportal_public_https_port != 443 %}:{{ svxportal_public_https_port }}{% endif %}{{ svxportal_proxy_dir }}"
+# The public root URL (e.g. https://svxportal.example.org)
+svxportal_root_url: "http{{ svxportal_tls_enable | ternary('s', '') }}://{{ svxportal_public_hostname }}{% if (svxportal_tls_enable | ternary(svxportal_public_https_port, svxportal_public_http_port)) != (svxportal_tls_enable | ternary(443, 80)) %}:{{ svxportal_tls_enable | ternary(svxportal_public_https_port, svxportal_public_http_port) }}{% endif %}"
+
+# The public URL for the reflector proxy
+svxportal_proxy_url: "{{ svxportal_root_url }}{{ svxportal_proxy_dir }}"
 
 # The path to the directory where recordings are stored
 svxportal_recording_dir: "{{ svxportal_html_dir }}/svxrecording"
 
 # Live listen URL
-svxportal_live_link_url: "https://{{ svxportal_public_hostname }}:8000/svxcard96"
+svxportal_live_link_url: "{{ svxportal_root_url }}/svxcard96"
 
 # Database settings
 svxportal_db_host: "localhost"
@@ -42,7 +45,7 @@ svxportal_http_port: 80
 svxportal_https_port: 443
 
 # Iframe under system description
-svxportal_documentation_url: "https://{{ svxportal_public_hostname }}{% if svxportal_public_https_port != 443 %}:{{ svxportal_public_https_port }}{% endif %}/docs/"
+svxportal_documentation_url: "{{ svxportal_root_url }}/docs/"
 
 # The default map postition
 svxportal_default_map_pos:
@@ -51,6 +54,9 @@ svxportal_default_map_pos:
 
 # The default map zoom level
 svxportal_default_zoom: 5
+
+# Choose if TLS (https) should be set up or not
+svxportal_tls_enable: false
 
 # Where to store the temporarily unencrypted ACME account key during generation
 svxportal_acme_key_path: "files/acme_account.key"
@@ -81,7 +87,7 @@ svxportal_acme_remaining_days_renew: 10
 #  HIDE_LANGUGE_BAR: false
 #  USE_CUSTOM_SIDBAR_HEADER: false
 #  USE_EXTERNAL_URL: true
-#  iframe_documentation_url: 'https://docs.example.org/dokuwiki/doku.php?id=svxreflector&do=export_xhtml'
+#  iframe_documentation_url: "{{ svxportal_documentation_url }}"
 #  USE_LOGIN: false
 #  PLAYER_TALKGROUP_DEFAULT: 240
 #  SEND_MAIL_TO_SYSOP: false

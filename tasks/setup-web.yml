@@ -97,6 +97,8 @@
 
 - name: Set up TLS for the webserver
   include_tasks: setup-web-tls-certificates.yml
+  when: svxportal_tls_enable
 
 - name: Enable SSL if correctly configured (post TLS setup)
   include_tasks: setup-web-enable-ssl-site.yml
+  when: svxportal_tls_enable

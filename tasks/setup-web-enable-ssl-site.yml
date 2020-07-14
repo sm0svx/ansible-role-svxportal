@@ -7,18 +7,29 @@
     - "{{ svxportal_tls_crt_path }}"
     - "{{ svxportal_tls_intermediate_path }}"
   register: check_cert_files
+  when: svxportal_tls_enable
 
-- name: Set up the all_cert_files_exist fact
+- name: Set up the tls_enable fact
   set_fact:
-    all_cert_files_exist: >-
-      {{ check_cert_files.results | map(attribute='stat.exists') |
-         select('equalto', false) | list | length == 0 }}
+    tls_enable: >-
+      {{ svxportal_tls_enable and
+         (check_cert_files.results | map(attribute='stat.exists') |
+         select('equalto', false) | list | length == 0) }}
 
-- name: "Ensure that the SvxPortal Apache SSL site is {{ all_cert_files_exist | ternary('en', 'dis') }}abled"
+- name: "Ensure that the Apache SSL module is {{ tls_enable | ternary('en', 'dis') }}abled"
   command: >
-    /usr/sbin/a2{{ all_cert_files_exist | ternary('en', 'dis') }}site 002-svxportal-ssl
+    /usr/sbin/a2{{ tls_enable | ternary('en', 'dis') }}mod ssl
   args:
-    creates: "{{ all_cert_files_exist | ternary('/etc/apache2/sites-enabled/002-svxportal-ssl.conf', omit) }}"
-    removes: "{{ (not all_cert_files_exist) | ternary('/etc/apache2/sites-enabled/002-svxportal-ssl.conf', omit) }}"
+    creates: "{{ tls_enable | ternary('/etc/apache2/mods-enabled/ssl.conf', omit) }}"
+    removes: "{{ (not tls_enable) | ternary('/etc/apache2/mods-enabled/ssl.conf', omit) }}"
+  notify:
+    - restart apache
+
+- name: "Ensure that the SvxPortal Apache SSL site is {{ tls_enable | ternary('en', 'dis') }}abled"
+  command: >
+    /usr/sbin/a2{{ tls_enable | ternary('en', 'dis') }}site 002-svxportal-ssl
+  args:
+    creates: "{{ tls_enable | ternary('/etc/apache2/sites-enabled/002-svxportal-ssl.conf', omit) }}"
+    removes: "{{ (not tls_enable) | ternary('/etc/apache2/sites-enabled/002-svxportal-ssl.conf', omit) }}"
   notify:
     - restart apache
