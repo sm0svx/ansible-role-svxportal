@@ -97,41 +97,51 @@
     modify_account: no
   register: acme_challenge
 
-- name: Set up challenge destination
-  set_fact:
-    challenge_info:
-      delegate_to: "{{ (svxportal_public_http_port == 80) | ternary(omit, 'localhost') }}"
-      destpath: "{{ (svxportal_public_http_port == 80) | ternary(svxportal_html_dir, 'tmp') }}"
-      destowner: "{{ (svxportal_public_http_port == 80) | ternary('root', omit) }}"
-      destgroup: "{{ (svxportal_public_http_port == 80) | ternary('root', omit) }}"
-      become: "{{ svxportal_public_http_port == 80 }}"
+# FIXME: Make sure that the path to the challenge is safe, that it does not
+# point to a directory outside of the webroot and that it does not overwrite
+# any files it should not overwrite. What does the ACME standard say about the
+# path for the challenge?
+# RFC 8555: https://tools.ietf.org/html/rfc8555#section-8.3
+
+#- name: Set up a dummy challenge for testing
+#  set_fact:
+#    acme_challenge:
+#      changed: True
+#      challenge_data:
+#        sk3w.se:
+#          http-01:
+#            resource: ".well-known/dummy-challenge/ansible-test-dummy-challenge"
+#            resource_value: |
+#              This is a dummy challenge used to test the Ansible playbooks
+#  tags: devel
+
+- name: Make sure that the challenge directory exist
+  vars:
+    ansible_become: "{{ svxportal_tls_acme_challenge_become }}"
+  file:
+    path: "{{ svxportal_tls_acme_challenge_webroot }}/{{ acme_challenge['challenge_data'][svxportal_public_hostname]['http-01']['resource'] | dirname }}"
+    owner: "{{ svxportal_tls_acme_challenge_owner | d(omit) }}"
+    group: "{{ svxportal_tls_acme_challenge_group | d(omit) }}"
+    mode: 0755
+    state: directory
+  delegate_to: "{{ svxportal_tls_acme_challenge_delegate_to | d(omit) }}"
   when: >-
     acme_challenge is changed and
     svxportal_public_hostname in acme_challenge['challenge_data']
 
-- name: Make sure that the challenge directory exist
-  vars:
-    ansible_become: "{{ challenge_info.become }}"
-  file:
-    path: "{{ challenge_info.destpath }}/{{ acme_challenge['challenge_data'][svxportal_public_hostname]['http-01']['resource'] | dirname }}"
-    owner: "{{ challenge_info.destowner | d(omit) }}"
-    group: "{{ challenge_info.destgroup | d(omit) }}"
-    mode: 0755
-    state: directory
-  delegate_to: "{{ challenge_info.delegate_to | d(omit) }}"
-  when: challenge_info is defined
-
 - name: Copy challenge to file
   vars:
-    ansible_become: "{{ challenge_info.become }}"
+    ansible_become: "{{ svxportal_tls_acme_challenge_become }}"
   copy:
-    dest: "{{ challenge_info.destpath }}/{{ acme_challenge['challenge_data'][svxportal_public_hostname]['http-01']['resource'] }}"
+    dest: "{{ svxportal_tls_acme_challenge_webroot }}/{{ acme_challenge['challenge_data'][svxportal_public_hostname]['http-01']['resource'] }}"
     content: "{{ acme_challenge['challenge_data'][svxportal_public_hostname]['http-01']['resource_value'] }}"
-    owner: "{{ challenge_info.destowner | d(omit) }}"
-    group: "{{ challenge_info.destgroup | d(omit) }}"
+    owner: "{{ svxportal_tls_acme_challenge_owner | d(omit) }}"
+    group: "{{ svxportal_tls_acme_challenge_group | d(omit) }}"
     mode: 0644
-  delegate_to: "{{ challenge_info.delegate_to | d(omit) }}"
-  when: challenge_info is defined
+  delegate_to: "{{ svxportal_tls_acme_challenge_delegate_to | d(omit) }}"
+  when: >-
+    acme_challenge is changed and
+    svxportal_public_hostname in acme_challenge['challenge_data']
 
 - name: Manually copy challenge to http web root
   pause:
@@ -142,10 +152,10 @@
 
       The whole directory hierachy must be preserved as is.
 
-        {{ challenge_info.destpath }}/{{ acme_challenge['challenge_data'][svxportal_public_hostname]['http-01']['resource'].split('/')[0] }}
+        {{ svxportal_tls_acme_challenge_webroot }}/{{ acme_challenge['challenge_data'][svxportal_public_hostname]['http-01']['resource'].split('/')[0] }}
 
       Press ENTER to continue or Ctrl-C to abort
-  when: challenge_info is defined and (svxportal_public_http_port != 80)
+  when: svxportal_tls_acme_challenge_manual
 
 - name: Let the challenge be validated and retrieve the cert and intermediate certificate
   acme_certificate:

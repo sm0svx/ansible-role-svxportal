@@ -82,6 +82,28 @@ svxportal_tls_acme_terms_agreed: no
 # Renew certificate when this many days remain of certificate validity
 svxportal_tls_acme_remaining_days_renew: 10
 
+# Choose if copying of the ACME challenge to the webroot should be manual or
+# automatic. Set to True for manual or False to enforce automatic.
+svxportal_tls_acme_challenge_manual: "{{ svxportal_public_http_port != 80 }}"
+
+# A host (inventory hostname) to install the ACME challenge on if the webserver
+# serving port 80 for your public hostname is not the same as the svxportal
+# server
+svxportal_tls_acme_challenge_delegate_to: "{{ (svxportal_tls_acme_challenge_manual) | ternary(omit, 'localhost') }}"
+
+# The root directory of the webserver serving port 80 for your public hostname
+# if it is not the same as for the svxportal server
+svxportal_tls_acme_challenge_webroot: "{{ svxportal_tls_acme_challenge_manual | ternary('tmp', svxportal_html_dir) }}"
+
+# The owner of the challenge file on the webserver
+svxportal_tls_acme_challenge_owner: "{{ svxportal_tls_acme_challenge_manual | ternary(omit, 'root') }}"
+
+# The group of the challenge file on the webserver
+svxportal_tls_acme_challenge_group: "{{ svxportal_tls_acme_challenge_manual | ternary(omit, 'root') }}"
+
+# Choose if we need to elevate privileges to install the ACME challenge
+svxportal_tls_acme_challenge_become: "{{ not svxportal_tls_acme_challenge_manual }}"
+
 # SvxPortal web environment settings
 #svxportal_settings:
 #  HIDE_LANGUGE_BAR: false
