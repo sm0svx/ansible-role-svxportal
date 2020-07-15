@@ -59,28 +59,28 @@ svxportal_default_zoom: 5
 svxportal_tls_enable: false
 
 # Where to store the temporarily unencrypted ACME account key during generation
-svxportal_acme_key_path: "files/acme_account.key"
+svxportal_tls_acme_key_path: "files/acme_account.key"
 
 # Where to store the encrypted ACME account key
-svxportal_acme_key_vault_path: "{{ svxportal_acme_key_path }}.vault"
+svxportal_tls_acme_key_vault_path: "{{ svxportal_tls_acme_key_path }}.vault"
 
 # Use the following ACME directory URL. Start by using the staging URL until
 # everything seem to work. Then switch to the production URL to get a real
 # certificate.
-svxportal_acme_directory: "https://acme-staging-v02.api.letsencrypt.org/directory"
-#svxportal_acme_directory: "https://acme-v02.api.letsencrypt.org/directory"
+svxportal_tls_acme_directory: "https://acme-staging-v02.api.letsencrypt.org/directory"
+#svxportal_tls_acme_directory: "https://acme-v02.api.letsencrypt.org/directory"
 
 # Where to send e-mails about certificates that are about to expire
-svxportal_acme_contact:
+svxportal_tls_acme_contact:
   - mailto:admin1@example.org
   - mailto:admin2@example.org
 
 # Set this to 'yes' if you accept the terms of service for the ACME service
 # provider.
-svxportal_acme_terms_agreed: no
+svxportal_tls_acme_terms_agreed: no
 
 # Renew certificate when this many days remain of certificate validity
-svxportal_acme_remaining_days_renew: 10
+svxportal_tls_acme_remaining_days_renew: 10
 
 # SvxPortal web environment settings
 #svxportal_settings:
