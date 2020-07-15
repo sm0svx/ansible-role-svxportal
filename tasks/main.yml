@@ -9,10 +9,10 @@
     - always
 
 - name: Sanity check
+  tags: always
   assert:
     that:
       - svxportal_public_hostname is defined
-      - not svxportal_tls_enable or (svxportal_public_http_port == 80)
 
 - name: Install required packages
   apt:

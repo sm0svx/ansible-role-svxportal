@@ -96,6 +96,7 @@
     enabled: yes
 
 - name: Set up TLS for the webserver
+  tags: always
   include_tasks: setup-web-tls-certificates.yml
   when: svxportal_tls_enable
 

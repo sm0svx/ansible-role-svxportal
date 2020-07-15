@@ -97,23 +97,55 @@
     modify_account: no
   register: acme_challenge
 
+- name: Set up challenge destination
+  set_fact:
+    challenge_info:
+      delegate_to: "{{ (svxportal_public_http_port == 80) | ternary(omit, 'localhost') }}"
+      destpath: "{{ (svxportal_public_http_port == 80) | ternary(svxportal_html_dir, 'tmp') }}"
+      destowner: "{{ (svxportal_public_http_port == 80) | ternary('root', omit) }}"
+      destgroup: "{{ (svxportal_public_http_port == 80) | ternary('root', omit) }}"
+      become: "{{ svxportal_public_http_port == 80 }}"
+  when: >-
+    acme_challenge is changed and
+    svxportal_public_hostname in acme_challenge['challenge_data']
+
 - name: Make sure that the challenge directory exist
+  vars:
+    ansible_become: "{{ challenge_info.become }}"
   file:
-    path: "{{ svxportal_html_dir }}/{{ acme_challenge['challenge_data'][svxportal_public_hostname]['http-01']['resource'] | dirname }}"
-    owner: root
-    group: root
+    path: "{{ challenge_info.destpath }}/{{ acme_challenge['challenge_data'][svxportal_public_hostname]['http-01']['resource'] | dirname }}"
+    owner: "{{ challenge_info.destowner | d(omit) }}"
+    group: "{{ challenge_info.destgroup | d(omit) }}"
     mode: 0755
     state: directory
-  when: acme_challenge is changed and svxportal_public_hostname in acme_challenge['challenge_data']
+  delegate_to: "{{ challenge_info.delegate_to | d(omit) }}"
+  when: challenge_info is defined
 
-- name: Copy challenge to http web root
+- name: Copy challenge to file
+  vars:
+    ansible_become: "{{ challenge_info.become }}"
   copy:
-    dest: "{{ svxportal_html_dir }}/{{ acme_challenge['challenge_data'][svxportal_public_hostname]['http-01']['resource'] }}"
+    dest: "{{ challenge_info.destpath }}/{{ acme_challenge['challenge_data'][svxportal_public_hostname]['http-01']['resource'] }}"
     content: "{{ acme_challenge['challenge_data'][svxportal_public_hostname]['http-01']['resource_value'] }}"
-    owner: root
-    group: root
+    owner: "{{ challenge_info.destowner | d(omit) }}"
+    group: "{{ challenge_info.destgroup | d(omit) }}"
     mode: 0644
-  when: acme_challenge is changed and svxportal_public_hostname in acme_challenge['challenge_data']
+  delegate_to: "{{ challenge_info.delegate_to | d(omit) }}"
+  when: challenge_info is defined
+
+- name: Manually copy challenge to http web root
+  pause:
+    prompt: |-
+
+      Manually copy the provided challenge to the webroot of the web server
+      that serves on port 80 for {{ svxportal_public_hostname }}.
+
+      The whole directory hierachy must be preserved as is.
+
+        {{ challenge_info.destpath }}/{{ acme_challenge['challenge_data'][svxportal_public_hostname]['http-01']['resource'].split('/')[0] }}
+
+      Press ENTER to continue or Ctrl-C to abort
+  when: challenge_info is defined and (svxportal_public_http_port != 80)
 
 - name: Let the challenge be validated and retrieve the cert and intermediate certificate
   acme_certificate:
