@@ -116,8 +116,6 @@
 #  tags: devel
 
 - name: Make sure that the challenge directory exist
-  vars:
-    ansible_become: "{{ svxportal_tls_acme_challenge_become }}"
   file:
     path: "{{ svxportal_tls_acme_challenge_webroot }}/{{ acme_challenge['challenge_data'][svxportal_public_hostname]['http-01']['resource'] | dirname }}"
     owner: "{{ svxportal_tls_acme_challenge_owner | d(omit) }}"
@@ -125,13 +123,12 @@
     mode: 0755
     state: directory
   delegate_to: "{{ svxportal_tls_acme_challenge_delegate_to | d(omit) }}"
+  become: "{{ svxportal_tls_acme_challenge_become }}"
   when: >-
     acme_challenge is changed and
     svxportal_public_hostname in acme_challenge['challenge_data']
 
 - name: Copy challenge to file
-  vars:
-    ansible_become: "{{ svxportal_tls_acme_challenge_become }}"
   copy:
     dest: "{{ svxportal_tls_acme_challenge_webroot }}/{{ acme_challenge['challenge_data'][svxportal_public_hostname]['http-01']['resource'] }}"
     content: "{{ acme_challenge['challenge_data'][svxportal_public_hostname]['http-01']['resource_value'] }}"
@@ -139,6 +136,7 @@
     group: "{{ svxportal_tls_acme_challenge_group | d(omit) }}"
     mode: 0644
   delegate_to: "{{ svxportal_tls_acme_challenge_delegate_to | d(omit) }}"
+  become: "{{ svxportal_tls_acme_challenge_become }}"
   when: >-
     acme_challenge is changed and
     svxportal_public_hostname in acme_challenge['challenge_data']
@@ -171,6 +169,8 @@
     remaining_days: "{{ svxportal_tls_acme_remaining_days_renew }}"
     modify_account: no
     data: "{{ acme_challenge }}"
+  notify:
+    - restart apache
 
 - name: Clear ACME account key variable
   set_fact:
