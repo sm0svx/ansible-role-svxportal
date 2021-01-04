@@ -75,6 +75,11 @@ svxportal_tls_acme_contact:
   - mailto:admin1@example.org
   - mailto:admin2@example.org
 
+# A list of alternative hostnames for the svxportal server. The main name
+# should also be included.
+svxportal_tls_subject_alt_name:
+  - "DNS:{{ svxportal_public_hostname }}"
+
 # Set this to 'yes' if you accept the terms of service for the ACME service
 # provider.
 svxportal_tls_acme_terms_agreed: no

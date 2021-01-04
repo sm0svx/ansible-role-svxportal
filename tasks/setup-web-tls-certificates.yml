@@ -1,5 +1,6 @@
 ---
 - name: Ensure that all certificate paths exist
+  tags: certificate
   file:
     name: "{{ item | dirname }}"
     state: directory
@@ -11,6 +12,7 @@
     label: "{{ item | dirname }}"
 
 - name: Generate a private key for the certificate
+  tags: certificate
   openssl_privatekey:
     path: "{{ svxportal_tls_key_path }}"
     type: RSA
@@ -21,24 +23,28 @@
     state: present
 
 - name: Generate a certificate signing request
+  tags: certificate
   openssl_csr:
     path: "{{ svxportal_tls_csr_path }}"
     privatekey_path: "{{ svxportal_tls_key_path }}"
     common_name: "{{ svxportal_public_hostname }}"
     #use_common_name_for_san: yes
-    subject_alt_name: "DNS:{{ svxportal_public_hostname }}"
+    subject_alt_name: "{{ svxportal_tls_subject_alt_name }}"
     #force: yes
     digest: sha256
     owner: root
     group: root
     mode: 0644
     state: present
+  register: openssl_csr
 
 - block:
     - name: Load ACME accout key
+      tags: certificate
       include_vars: "{{ svxportal_tls_acme_key_vault_path }}"
   rescue:
     - name: Generate an ACME account key
+      tags: certificate
       vars:
         ansible_become: false
       openssl_privatekey:
@@ -52,6 +58,7 @@
       delegate_to: localhost
 
     - name: Manually encrypt the ACME account key
+      tags: certificate
       pause:
         prompt: |-
           Run the following command manually, in another terminal, to create an
@@ -62,9 +69,11 @@
             When done, press ENTER to continue or Ctrl-C to abort
 
     - name: Load ACME accout key
+      tags: certificate
       include_vars: "{{ svxportal_tls_acme_key_vault_path }}"
 
 - name: Ensure ACME account is created and up to date
+  tags: certificate
   vars:
     ansible_become: false
   acme_account:
@@ -81,6 +90,7 @@
   run_once: true
 
 - name: Request cert signing if cert is nonexistent or if it's about to expire
+  tags: certificate
   vars:
     ansible_become: false
   acme_certificate:
@@ -95,6 +105,7 @@
     #fullchain_dest: "{{ svxportal_tls_fullchain_path }}"
     remaining_days: "{{ svxportal_tls_acme_remaining_days_renew }}"
     modify_account: no
+    force: "{{ openssl_csr is changed }}"
   register: acme_challenge
 
 # FIXME: Make sure that the path to the challenge is safe, that it does not
@@ -116,32 +127,42 @@
 #  tags: devel
 
 - name: Make sure that the challenge directory exist
+  tags: certificate
   file:
-    path: "{{ svxportal_tls_acme_challenge_webroot }}/{{ acme_challenge['challenge_data'][svxportal_public_hostname]['http-01']['resource'] | dirname }}"
+    #path: "{{ svxportal_tls_acme_challenge_webroot }}/{{ acme_challenge['challenge_data'][svxportal_public_hostname]['http-01']['resource'] | dirname }}"
+    path: "{{ svxportal_tls_acme_challenge_webroot }}/{{ item.value['http-01']['resource'] | dirname }}"
     owner: "{{ svxportal_tls_acme_challenge_owner | d(omit) }}"
     group: "{{ svxportal_tls_acme_challenge_group | d(omit) }}"
     mode: 0755
     state: directory
   delegate_to: "{{ svxportal_tls_acme_challenge_delegate_to | d(omit) }}"
   become: "{{ svxportal_tls_acme_challenge_become }}"
-  when: >-
-    acme_challenge is changed and
-    svxportal_public_hostname in acme_challenge['challenge_data']
+  with_items: "{{ acme_challenge['challenge_data'] | d({}) | dict2items }}"
+  when: acme_challenge is changed
+  #when: >-
+  #  acme_challenge is changed and
+  #  svxportal_public_hostname in acme_challenge['challenge_data']
 
 - name: Copy challenge to file
+  tags: certificate
   copy:
-    dest: "{{ svxportal_tls_acme_challenge_webroot }}/{{ acme_challenge['challenge_data'][svxportal_public_hostname]['http-01']['resource'] }}"
-    content: "{{ acme_challenge['challenge_data'][svxportal_public_hostname]['http-01']['resource_value'] }}"
+    #dest: "{{ svxportal_tls_acme_challenge_webroot }}/{{ acme_challenge['challenge_data'][svxportal_public_hostname]['http-01']['resource'] }}"
+    dest: "{{ svxportal_tls_acme_challenge_webroot }}/{{ item.value['http-01']['resource'] }}"
+    #content: "{{ acme_challenge['challenge_data'][svxportal_public_hostname]['http-01']['resource_value'] }}"
+    content: "{{ item.value['http-01']['resource_value'] }}"
     owner: "{{ svxportal_tls_acme_challenge_owner | d(omit) }}"
     group: "{{ svxportal_tls_acme_challenge_group | d(omit) }}"
     mode: 0644
   delegate_to: "{{ svxportal_tls_acme_challenge_delegate_to | d(omit) }}"
   become: "{{ svxportal_tls_acme_challenge_become }}"
-  when: >-
-    acme_challenge is changed and
-    svxportal_public_hostname in acme_challenge['challenge_data']
+  with_items: "{{ acme_challenge['challenge_data'] | d({}) | dict2items }}"
+  when: acme_challenge is changed
+  #when: >-
+  #  acme_challenge is changed and
+  #  svxportal_public_hostname in acme_challenge['challenge_data']
 
 - name: Manually copy challenge to http web root
+  tags: certificate
   pause:
     prompt: |-
 
@@ -150,12 +171,15 @@
 
       The whole directory hierachy must be preserved as is.
 
-        {{ svxportal_tls_acme_challenge_webroot }}/{{ acme_challenge['challenge_data'][svxportal_public_hostname]['http-01']['resource'].split('/')[0] }}
+      {% for item in acme_challenge['challenge_data'] | d({}) | dict2items %}
+        {{ svxportal_tls_acme_challenge_webroot }}/{{ item.value['http-01']['resource'].split('/')[0] }}
+      {% endfor %}
 
       Press ENTER to continue or Ctrl-C to abort
   when: svxportal_tls_acme_challenge_manual
 
 - name: Let the challenge be validated and retrieve the cert and intermediate certificate
+  tags: certificate
   acme_certificate:
     acme_directory: "{{ svxportal_tls_acme_directory }}"
     acme_version: 2
@@ -169,9 +193,11 @@
     remaining_days: "{{ svxportal_tls_acme_remaining_days_renew }}"
     modify_account: no
     data: "{{ acme_challenge }}"
+    force: "{{ openssl_csr is changed }}"
   notify:
     - restart apache
 
 - name: Clear ACME account key variable
+  tags: certificate
   set_fact:
     svxportal_tls_acme_account_key:
