@@ -115,6 +115,7 @@
 # RFC 8555: https://tools.ietf.org/html/rfc8555#section-8.3
 
 #- name: Set up a dummy challenge for testing
+#  tags: devel
 #  set_fact:
 #    acme_challenge:
 #      changed: True
@@ -123,43 +124,46 @@
 #          http-01:
 #            resource: ".well-known/dummy-challenge/ansible-test-dummy-challenge"
 #            resource_value: |
-#              This is a dummy challenge used to test the Ansible playbooks
-#  tags: devel
+#              This is a dummy challenge for sk3w.se used to test the Ansible playbooks
+#        refelctor-sm.svxlink.org:
+#          http-01:
+#            resource: ".well-known/dummy-challenge/ansible-test-dummy-challenge"
+#            resource_value: |
+#              This is a dummy challenge for reflector-sm.svxlink.org used to test the Ansible playbooks
 
 - name: Make sure that the challenge directory exist
   tags: certificate
+  vars:
+    hvars: "{{ hostvars[item[0]]|d(hostvars[inventory_hostname]) }}"
   file:
-    #path: "{{ svxportal_tls_acme_challenge_webroot }}/{{ acme_challenge['challenge_data'][svxportal_public_hostname]['http-01']['resource'] | dirname }}"
-    path: "{{ svxportal_tls_acme_challenge_webroot }}/{{ item.value['http-01']['resource'] | dirname }}"
-    owner: "{{ svxportal_tls_acme_challenge_owner | d(omit) }}"
-    group: "{{ svxportal_tls_acme_challenge_group | d(omit) }}"
+    path: "{{ hvars.svxportal_tls_acme_challenge_webroot|d(svxportal_html_dir) }}/{{ item[1].value['http-01']['resource'] | dirname }}"
+    owner: "{{ hvars.svxportal_tls_acme_challenge_owner | d(omit) }}"
+    group: "{{ hvars.svxportal_tls_acme_challenge_group | d(omit) }}"
     mode: 0755
     state: directory
-  delegate_to: "{{ svxportal_tls_acme_challenge_delegate_to | d(omit) }}"
-  become: "{{ svxportal_tls_acme_challenge_become }}"
-  with_items: "{{ acme_challenge['challenge_data'] | d({}) | dict2items }}"
+  become: "{{ hvars.svxportal_tls_acme_challenge_become | d(omit) }}"
+  delegate_to: "{{ item[0] }}"
+  with_nested:
+    - "{{ svxportal_tls_acme_challenge_delegate_to | d(inventory_hostname) }}"
+    - "{{ acme_challenge['challenge_data'] | d({}) | dict2items }}"
   when: acme_challenge is changed
-  #when: >-
-  #  acme_challenge is changed and
-  #  svxportal_public_hostname in acme_challenge['challenge_data']
 
 - name: Copy challenge to file
   tags: certificate
+  vars:
+    hvars: "{{ hostvars[item[0]]|d(hostvars[inventory_hostname]) }}"
   copy:
-    #dest: "{{ svxportal_tls_acme_challenge_webroot }}/{{ acme_challenge['challenge_data'][svxportal_public_hostname]['http-01']['resource'] }}"
-    dest: "{{ svxportal_tls_acme_challenge_webroot }}/{{ item.value['http-01']['resource'] }}"
-    #content: "{{ acme_challenge['challenge_data'][svxportal_public_hostname]['http-01']['resource_value'] }}"
-    content: "{{ item.value['http-01']['resource_value'] }}"
-    owner: "{{ svxportal_tls_acme_challenge_owner | d(omit) }}"
-    group: "{{ svxportal_tls_acme_challenge_group | d(omit) }}"
+    dest: "{{ hvars.svxportal_tls_acme_challenge_webroot|d(svxportal_html_dir) }}/{{ item[1].value['http-01']['resource'] }}"
+    content: "{{ item[1].value['http-01']['resource_value'] }}"
+    owner: "{{ hvars.svxportal_tls_acme_challenge_owner | d(omit) }}"
+    group: "{{ hvars.svxportal_tls_acme_challenge_group | d(omit) }}"
     mode: 0644
-  delegate_to: "{{ svxportal_tls_acme_challenge_delegate_to | d(omit) }}"
-  become: "{{ svxportal_tls_acme_challenge_become }}"
-  with_items: "{{ acme_challenge['challenge_data'] | d({}) | dict2items }}"
+  become: "{{ hvars.svxportal_tls_acme_challenge_become | d(omit) }}"
+  delegate_to: "{{ item[0] }}"
+  with_nested:
+    - "{{ svxportal_tls_acme_challenge_delegate_to | d(omit) }}"
+    - "{{ acme_challenge['challenge_data'] | d({}) | dict2items }}"
   when: acme_challenge is changed
-  #when: >-
-  #  acme_challenge is changed and
-  #  svxportal_public_hostname in acme_challenge['challenge_data']
 
 - name: Manually copy challenge to http web root
   tags: certificate
