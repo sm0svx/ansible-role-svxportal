@@ -21,7 +21,7 @@ LOCK TABLES users WRITE;
 DELETE FROM users WHERE Username='{{ item.username }}';
 {% endfor %}
 {% for item in add_users %}
-INSERT INTO users (Username,Password,level,Is_admin,Firstname,lastname) VALUES ('{{ item.username }}','{{ item.password }}',{{ item.level }},{{ item.is_admin }},'{{ item.firstname }}','{{ item.lastname }}');
+INSERT INTO users (Username,Password,level,Is_admin,Firstname,lastname,email) VALUES ('{{ item.username }}','{{ item.password }}',{{ item.level }},{{ item.is_admin }},'{{ item.firstname }}','{{ item.lastname }}','{{ item.email }}');
 {% endfor %}
 UNLOCK TABLES;
 

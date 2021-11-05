@@ -129,6 +129,7 @@ svxportal_tls_acme_challenge_become: "{{ not svxportal_tls_acme_challenge_manual
 #    lastname: 'install'
 #    is_admin: true
 #    level: 3
+#    email: 'svxportal@example.com'
 
 # Talkgroup setup
 #svxportal_talkgroups:
