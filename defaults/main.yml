@@ -109,6 +109,9 @@ svxportal_tls_acme_challenge_group: "{{ svxportal_tls_acme_challenge_manual | te
 # Choose if we need to elevate privileges to install the ACME challenge
 svxportal_tls_acme_challenge_become: "{{ not svxportal_tls_acme_challenge_manual }}"
 
+# Extra configuration for the Apache SSL http server
+svxportal_html_extra_ssl_config: ""
+
 # SvxPortal web environment settings
 #svxportal_settings:
 #  HIDE_LANGUGE_BAR: false
